@@ -192,6 +192,20 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     carregarDashboard();
     carregarMotoboysSelect();
+
+    // ── Controle de Assinatura (barra de aviso / bloqueio) ──
+    if (typeof SubscriptionUI !== "undefined") {
+      SubscriptionUI.inicializar({
+        supabaseUrl:  typeof _SUPABASE_URL !== "undefined" ? _SUPABASE_URL : "",
+        supabaseKey:  typeof _SUPABASE_KEY !== "undefined" ? _SUPABASE_KEY : "",
+        contatoFone:  "595976771714",
+        contatoNome:  "SuporteLinkPY",
+      });
+    }
+
+    // Exibe menu Assinatura somente para adminMaster
+    const menuAssin = document.getElementById("menu-assinatura");
+    if (menuAssin) menuAssin.style.display = perfilUsuario === "adminMaster" ? "flex" : "none";
   }
 
   let _lastWidth = window.innerWidth;
@@ -358,6 +372,7 @@ function showTab(tabId, event) {
     amCarregarUsuarios();
     renderPainelFeatures();
   }
+  if (realTabId === "assinatura") carregarPainelAssinatura();
   if (realTabId === "estatisticas") {
     initEstatisticas();
     _estPopularCategorias();
@@ -6657,6 +6672,172 @@ async function logout() {
   else window.location.href = "login.html";
 }
 
+// ─────────────────────────────────────────────────────────────
+// ALTERAR SENHA
+// ─────────────────────────────────────────────────────────────
+function abrirModalAlterarSenha() {
+  const html = `
+    <div id="modal-alterar-senha" class="modal-overlay" style="display:flex;z-index:9999;backdrop-filter:blur(4px)">
+      <div style="background:#fff;border-radius:20px;width:100%;max-width:420px;
+        box-shadow:0 24px 60px rgba(0,0,0,0.18);overflow:hidden;font-family:inherit">
+        <!-- Header -->
+        <div style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#1a7a2e 100%);
+          padding:24px 24px 20px;position:relative">
+          <button onclick="document.getElementById('modal-alterar-senha').remove()"
+            style="position:absolute;top:14px;right:16px;background:rgba(255,255,255,0.12);
+            border:none;color:#fff;width:30px;height:30px;border-radius:50%;font-size:14px;
+            cursor:pointer">✕</button>
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="background:rgba(255,255,255,0.12);border-radius:12px;padding:10px;font-size:22px">🔐</div>
+            <div>
+              <div style="color:#fff;font-size:1.1rem;font-weight:700">Alterar Senha</div>
+              <div style="color:rgba(255,255,255,0.55);font-size:0.78rem;margin-top:2px">Escolha uma senha forte</div>
+            </div>
+          </div>
+        </div>
+        <!-- Body -->
+        <div style="padding:22px 24px 18px">
+          <div style="margin-bottom:16px">
+            <label style="font-size:0.75rem;font-weight:600;color:#64748b;text-transform:uppercase;
+              letter-spacing:.4px;display:block;margin-bottom:6px">Nova senha</label>
+            <div style="position:relative">
+              <input type="password" id="wl-nova-senha" placeholder="Digite a nova senha"
+                autocomplete="new-password" oninput="_wlAvaliarSenha(this.value)"
+                style="width:100%;padding:10px 42px 10px 13px;border:2px solid #e2e8f0;
+                border-radius:10px;font-size:0.9rem;outline:none;box-sizing:border-box"
+                onfocus="this.style.borderColor='#1a7a2e'" onblur="this.style.borderColor='#e2e8f0'"/>
+              <span onclick="_wlToggleSenha('wl-nova-senha','wl-eye1')" id="wl-eye1"
+                style="position:absolute;right:11px;top:50%;transform:translateY(-50%);
+                cursor:pointer;font-size:17px;user-select:none">👁</span>
+            </div>
+            <!-- Barra de força -->
+            <div style="margin-top:7px">
+              <div style="display:flex;gap:4px;height:5px;border-radius:4px;overflow:hidden">
+                <div id="wl-b1" style="flex:1;background:#e2e8f0;border-radius:4px;transition:background .3s"></div>
+                <div id="wl-b2" style="flex:1;background:#e2e8f0;border-radius:4px;transition:background .3s"></div>
+                <div id="wl-b3" style="flex:1;background:#e2e8f0;border-radius:4px;transition:background .3s"></div>
+                <div id="wl-b4" style="flex:1;background:#e2e8f0;border-radius:4px;transition:background .3s"></div>
+              </div>
+              <div id="wl-forca-lbl" style="font-size:0.72rem;color:#aaa;margin-top:4px;min-height:14px"></div>
+            </div>
+            <!-- Critérios -->
+            <div style="margin-top:9px;display:grid;grid-template-columns:1fr 1fr;gap:3px 10px">
+              <div id="wl-c1" style="font-size:.72rem;color:#bbb;transition:color .25s">✗ Mín. 8 caracteres</div>
+              <div id="wl-c2" style="font-size:.72rem;color:#bbb;transition:color .25s">✗ Número</div>
+              <div id="wl-c3" style="font-size:.72rem;color:#bbb;transition:color .25s">✗ Maiúscula</div>
+              <div id="wl-c4" style="font-size:.72rem;color:#bbb;transition:color .25s">✗ Caractere especial</div>
+            </div>
+          </div>
+          <div style="margin-bottom:6px">
+            <label style="font-size:0.75rem;font-weight:600;color:#64748b;text-transform:uppercase;
+              letter-spacing:.4px;display:block;margin-bottom:6px">Confirmar senha</label>
+            <div style="position:relative">
+              <input type="password" id="wl-conf-senha" placeholder="Repita a nova senha"
+                autocomplete="new-password" oninput="_wlVerificarMatch()"
+                style="width:100%;padding:10px 42px 10px 13px;border:2px solid #e2e8f0;
+                border-radius:10px;font-size:0.9rem;outline:none;box-sizing:border-box"
+                onfocus="this.style.borderColor='#1a7a2e'" onblur="this.style.borderColor='#e2e8f0'"/>
+              <span onclick="_wlToggleSenha('wl-conf-senha','wl-eye2')" id="wl-eye2"
+                style="position:absolute;right:11px;top:50%;transform:translateY(-50%);
+                cursor:pointer;font-size:17px;user-select:none">👁</span>
+            </div>
+            <div id="wl-match-lbl" style="font-size:0.78rem;margin-top:5px;min-height:16px"></div>
+          </div>
+          <div id="wl-msg-senha" style="display:none;color:#e74c3c;font-size:0.82rem;
+            background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:8px 12px;margin-top:10px"></div>
+        </div>
+        <!-- Footer -->
+        <div style="padding:0 24px 22px;display:flex;gap:10px">
+          <button onclick="document.getElementById('modal-alterar-senha').remove()"
+            style="flex:1;padding:11px;background:#f5f5f5;color:#666;border:none;border-radius:10px;
+            font-size:0.88rem;font-weight:600;cursor:pointer">Cancelar</button>
+          <button id="wl-btn-salvar-senha" onclick="wlSalvarNovaSenha()"
+            style="flex:2;padding:11px;background:linear-gradient(135deg,#1a7a2e,#145a22);
+            color:#fff;border:none;border-radius:10px;font-size:0.88rem;font-weight:700;cursor:pointer">
+            🔒 Salvar Nova Senha
+          </button>
+        </div>
+      </div>
+    </div>`;
+  const old = document.getElementById("modal-alterar-senha");
+  if (old) old.remove();
+  document.body.insertAdjacentHTML("beforeend", html);
+  setTimeout(() => document.getElementById("wl-nova-senha")?.focus(), 120);
+}
+
+function _wlToggleSenha(inputId, spanId) {
+  const inp = document.getElementById(inputId);
+  const sp  = document.getElementById(spanId);
+  if (!inp) return;
+  inp.type = inp.type === "password" ? "text" : "password";
+  if (sp) sp.textContent = inp.type === "password" ? "👁" : "🙈";
+}
+
+function _wlAvaliarSenha(v) {
+  const checks = [v.length >= 8, /\d/.test(v), /[A-Z]/.test(v), /[^A-Za-z0-9]/.test(v)];
+  const txts   = ["Mín. 8 caracteres","Número","Maiúscula","Caractere especial"];
+  const cores  = ["#e2e8f0","#ef4444","#f97316","#eab308","#22c55e"];
+  const labels = ["","Fraca 😬","Razoável 😐","Boa 👍","Forte 💪"];
+  const score  = checks.filter(Boolean).length;
+
+  checks.forEach((ok, i) => {
+    const el = document.getElementById("wl-c" + (i + 1));
+    if (!el) return;
+    el.textContent = (ok ? "✓ " : "✗ ") + txts[i];
+    el.style.color = ok ? "#22c55e" : "#bbb";
+  });
+  for (let i = 1; i <= 4; i++) {
+    const b = document.getElementById("wl-b" + i);
+    if (b) b.style.background = i <= score ? cores[score] : "#e2e8f0";
+  }
+  const fl = document.getElementById("wl-forca-lbl");
+  if (fl) { fl.textContent = labels[score]; fl.style.color = cores[score]; }
+  _wlVerificarMatch();
+}
+
+function _wlVerificarMatch() {
+  const a   = document.getElementById("wl-nova-senha")?.value || "";
+  const b   = document.getElementById("wl-conf-senha")?.value || "";
+  const lbl = document.getElementById("wl-match-lbl");
+  const inp = document.getElementById("wl-conf-senha");
+  if (!lbl || !b) return;
+  const ok = a === b && b.length > 0;
+  lbl.textContent = ok ? "✓ Senhas coincidem" : "✗ Senhas não coincidem";
+  lbl.style.color = ok ? "#22c55e" : "#ef4444";
+  if (inp) inp.style.borderColor = b.length > 0 ? (ok ? "#22c55e" : "#ef4444") : "#e2e8f0";
+}
+
+async function wlSalvarNovaSenha() {
+  const nova   = document.getElementById("wl-nova-senha")?.value || "";
+  const conf   = document.getElementById("wl-conf-senha")?.value || "";
+  const msgEl  = document.getElementById("wl-msg-senha");
+  const showErr = (t) => { msgEl.textContent = t; msgEl.style.display = "block"; };
+  msgEl.style.display = "none";
+
+  if (nova.length < 6)  return showErr("A senha deve ter pelo menos 6 caracteres.");
+  if (nova !== conf)    return showErr("As senhas não coincidem.");
+
+  const btn = document.getElementById("wl-btn-salvar-senha");
+  if (btn) { btn.disabled = true; btn.textContent = "⏳ Salvando..."; btn.style.opacity = ".7"; }
+
+  const { error } = await supa.auth.updateUser({ password: nova });
+
+  if (btn) { btn.disabled = false; btn.textContent = "🔒 Salvar Nova Senha"; btn.style.opacity = "1"; }
+
+  if (error) {
+    showErr("Erro: " + error.message);
+  } else {
+    document.getElementById("modal-alterar-senha").remove();
+    const toast = document.createElement("div");
+    toast.textContent = "✅ Senha alterada com sucesso!";
+    toast.style.cssText = "position:fixed;bottom:28px;left:50%;transform:translateX(-50%);" +
+      "background:#1a7a2e;color:#fff;padding:12px 24px;border-radius:12px;font-weight:600;" +
+      "font-size:0.9rem;z-index:99999;box-shadow:0 8px 24px rgba(0,0,0,0.2)";
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3200);
+  }
+}
+
 // =========================================
 // 9. VENDA BALCÃO (NOVA VERSÃO VISUAL)
 // =========================================
@@ -6667,7 +6848,7 @@ async function logout() {
 let carrinhoPDV = [];
 let produtosCachePDV = [];
 // Cotação carregada das configurações (fallback 1100)
-let _cotacaoPDV = 1100;
+let _cotacaoPDV = 1150;
 let _taxaDebitoPDV = 1.99;
 let _taxaCreditoPDV = 4.98;
 let _cartaoBRTipoPDV = "debito";
