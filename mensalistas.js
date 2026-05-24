@@ -98,7 +98,7 @@ function mensRenderPlanos() {
     cont.innerHTML = `
       <div style="text-align:center;color:#aaa;padding:40px">
         <div style="font-size:2rem;margin-bottom:8px">📋</div>
-        <div>${busca || filtro !== 'todos' ? 'Nenhum plano encontrado com esse filtro.' : 'Nenhum plano mensalista cadastrado ainda.'}</div>
+        <div>${busca || filtro !== 'todos' ? t('mens.nenhum_filtro', 'Nenhum plano encontrado com este filtro.') : t('mens.nenhum_registrado', 'Nenhum plano mensal registrado ainda.')}</div>
       </div>`;
     return;
   }
@@ -110,8 +110,8 @@ function mensRenderPlanos() {
     const barColor    = pct > 50 ? '#1a7a2e' : pct > 20 ? '#f39c12' : '#e74c3c';
     const statusColor = p.ativo ? '#1a7a2e' : '#9ca3af';
     const dataFim     = p.data_fim
-      ? new Date(p.data_fim + 'T12:00:00').toLocaleDateString('pt-BR')
-      : 'Indeterminado';
+      ? new Date(p.data_fim + 'T12:00:00').toLocaleDateString('es-PY')
+      : t('geral.indeterminado', 'Indeterminado');
     const vencendo    = p.data_fim && new Date(p.data_fim) < new Date(Date.now() + 7 * 86400000);
 
     return `
@@ -124,10 +124,10 @@ function mensRenderPlanos() {
           </div>
           <div style="text-align:right;flex-shrink:0">
             <span style="background:${p.ativo ? '#dcfce7' : '#f3f4f6'};color:${statusColor};padding:3px 11px;border-radius:10px;font-size:0.73rem;font-weight:700">
-              ${p.ativo ? '● ATIVO' : '○ INATIVO'}
+              ${p.ativo ? '● ' + t('geral.ativo', 'ATIVO') : '○ ' + t('geral.inativo', 'INATIVO')}
             </span>
             <div style="font-size:0.75rem;color:${vencendo && p.ativo ? '#e74c3c' : '#9ca3af'};margin-top:5px">
-              ${vencendo && p.ativo ? '⚠️ ' : ''}Vence: ${dataFim}
+              ${vencendo && p.ativo ? '⚠️ ' : ''}${t('geral.vence', 'Vence:')} ${dataFim}
             </div>
             <div style="font-weight:700;color:#1a7a2e;font-size:0.95rem;margin-top:3px">
               Gs ${Math.round(p.valor_plano || 0).toLocaleString('es-PY')}
@@ -137,7 +137,7 @@ function mensRenderPlanos() {
 
         <div style="margin-top:12px">
           <div style="display:flex;justify-content:space-between;font-size:0.82rem;margin-bottom:5px">
-            <span style="color:#555">Saldo de itens: <b style="color:#111">${qtdRest} restantes</b> de ${qtdTotal}</span>
+            <span style="color:#555">${t('mens.saldo_itens', 'Saldo de itens:')} <b style="color:#111">${qtdRest} ${t('mens.restantes', 'restantes')}</b> de ${qtdTotal}</span>
             <span style="color:${barColor};font-weight:700">${pct}%</span>
           </div>
           <div style="background:#f0f0f0;border-radius:6px;height:9px;overflow:hidden">
@@ -149,10 +149,10 @@ function mensRenderPlanos() {
           ${p.ativo && qtdRest > 0 ? `
           <button onclick="mensAbrirEntrega(${p.id})"
             style="flex:2;padding:9px;background:#1a7a2e;color:#fff;border:none;border-radius:9px;cursor:pointer;font-size:0.83rem;font-weight:700;min-width:120px">
-            📦 Registrar Entrega
+            📦 ${t('mens.registrar_entrega', 'Registrar Entrega')}
           </button>` : (qtdRest <= 0 && p.ativo ? `
           <div style="flex:2;padding:9px;background:#fef3c7;color:#92400e;border-radius:9px;font-size:0.82rem;font-weight:600;text-align:center;min-width:120px">
-            ✅ Plano esgotado
+            ✅ ${t('mens.plano_esgotado', 'Plano esgotado')}
           </div>` : '')}
           <button onclick="mensAbrirModalPlano(${p.id})"
             style="flex:1;padding:9px;background:#3498db;color:#fff;border:none;border-radius:9px;cursor:pointer;font-size:0.83rem;font-weight:600;min-width:70px">
@@ -164,11 +164,10 @@ function mensRenderPlanos() {
           </button>
           <button onclick="mensExcluirPlano(${p.id})"
             style="flex:0 0 40px;padding:9px;background:#fee2e2;color:#e74c3c;border:none;border-radius:9px;cursor:pointer;font-size:0.9rem;font-weight:700"
-            title="Excluir plano">
+            title="${t('mens.excluir_plano', 'Excluir plano')}">
             🗑️
           </button>
         </div>
-      </div>`;
   }).join('');
 }
 
@@ -192,7 +191,7 @@ function mensAbrirModalPlano(id = null) {
   // Popula select de clientes
   const selCli = document.getElementById('mens-plano-cli-sel');
   if (selCli) {
-    selCli.innerHTML = '<option value="">— Selecione o cliente —</option>' +
+    selCli.innerHTML = `<option value="">${t('mens.selecione_cliente', '— Selecione o cliente —')}</option>` +
       _mens_clientes.map(c =>
         `<option value="${c.id}" ${p?.cliente_id === c.id ? 'selected' : ''}>${c.nome}${c.telefone ? ' · ' + c.telefone : ''}</option>`
       ).join('');
@@ -200,11 +199,11 @@ function mensAbrirModalPlano(id = null) {
       document.getElementById('mens-plano-cli-id').value = selCli.value;
     };
   }
-
+ 
   // Popula select de produtos
   const selProd = document.getElementById('mens-plano-prod-sel');
   if (selProd) {
-    selProd.innerHTML = '<option value="">— Selecione do cardápio —</option>' +
+    selProd.innerHTML = `<option value="">${t('mens.selecione_cardapio', '— Selecione do cardápio —')}</option>` +
       _mens_produtos.map(pr =>
         `<option value="${pr.nome}" ${p?.produto_nome === pr.nome ? 'selected' : ''}>${pr.nome}${pr.categoria_slug ? ' · ' + pr.categoria_slug : ''}</option>`
       ).join('');
@@ -220,8 +219,7 @@ function mensAbrirModalPlano(id = null) {
       infoRenov.style.display = 'block';
       infoRenov.innerHTML = `
         <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;font-size:0.82rem;color:#1e40af;margin-bottom:14px">
-          <b>Renovação:</b> Ao alterar a quantidade total, o saldo restante será ajustado proporcionalmente.
-          Saldo atual: <b>${p.quantidade_restante} itens</b>.
+          ${t('mens.renovacao_info', '<b>Renovação:</b> Ao modificar a quantidade total, o saldo restante será ajustado proporcionalmente.<br>Saldo atual: <b>{qtd} itens</b>.').replace('{qtd}', p.quantidade_restante)}
         </div>`;
     } else {
       infoRenov.style.display = 'none';
@@ -242,10 +240,10 @@ async function mensSalvarPlano() {
   const data_fim     = document.getElementById('mens-plano-fim').value || null;
   const ativo        = document.getElementById('mens-plano-ativo')?.checked ?? true;
 
-  if (!cliente_id)    { alert('Selecione o cliente.'); return; }
-  if (!produto_nome)  { alert('Informe o produto/item do plano.'); return; }
-  if (qtd_total <= 0) { alert('Informe a quantidade total de itens (ex: 22 refeições).'); return; }
-  if (valor <= 0)     { alert('Informe o valor do plano.'); return; }
+  if (!cliente_id)    { alert(t('mens.alerta_cliente', 'Selecione o cliente.')); return; }
+  if (!produto_nome)  { alert(t('mens.alerta_produto', 'Insira o produto/item do plano.')); return; }
+  if (qtd_total <= 0) { alert(t('mens.alerta_qtd', 'Insira a quantidade total de itens (ex: 22 refeições).')); return; }
+  if (valor <= 0)     { alert(t('mens.alerta_valor', 'Insira o valor do plano.')); return; }
 
   const payload = {
     cliente_id,
@@ -271,7 +269,7 @@ async function mensSalvarPlano() {
     ({ error } = await supa.from('planos_mensalistas').insert([payload]));
   }
 
-  if (error) { alert('Erro ao salvar: ' + error.message); return; }
+  if (error) { alert(t('mens.erro_salvar', 'Erro ao salvar: ') + error.message); return; }
   fecharModal('modal-mens-plano');
   mensCarregarPlanos();
 }
@@ -289,7 +287,7 @@ function mensAbrirEntrega(planoId) {
   document.getElementById('mens-ent-cliente').textContent = p.clientes?.nome || '—';
   document.getElementById('mens-ent-tel').textContent     = p.clientes?.telefone || '';
   document.getElementById('mens-ent-produto').textContent = p.produto_nome;
-  document.getElementById('mens-ent-saldo').textContent   = `${p.quantidade_restante} de ${p.quantidade_total} disponíveis`;
+  document.getElementById('mens-ent-saldo').textContent   = `${p.quantidade_restante} de ${p.quantidade_total} ${t('mens.disponiveis', 'disponíveis')}`;
   document.getElementById('mens-ent-qtd').value = 1;
   document.getElementById('mens-ent-qtd').max   = p.quantidade_restante;
   document.getElementById('mens-ent-obs').value = '';
@@ -313,11 +311,11 @@ async function mensSalvarEntrega() {
   if (!p) return;
 
   if (qtd <= 0) {
-    alert('Informe uma quantidade válida.');
+    alert(t('mens.alerta_qtd_valida', 'Insira uma quantidade válida.'));
     return;
   }
   if (qtd > p.quantidade_restante) {
-    alert(`Saldo insuficiente. Máximo disponível: ${p.quantidade_restante} itens.`);
+    alert(t('mens.alerta_saldo_insuficiente', 'Saldo insuficiente. Máximo disponível: {qtd} itens.').replace('{qtd}', p.quantidade_restante));
     return;
   }
 
@@ -334,7 +332,7 @@ async function mensSalvarEntrega() {
     .select('id, created_at')
     .single();
 
-  if (errEnt) { alert('Erro ao registrar entrega: ' + errEnt.message); return; }
+  if (errEnt) { alert(t('mens.erro_registrar', 'Erro ao registrar entrega: ') + errEnt.message); return; }
 
   // Atualiza saldo restante
   const novoRestante = p.quantidade_restante - qtd;
@@ -343,7 +341,7 @@ async function mensSalvarEntrega() {
     .update({ quantidade_restante: novoRestante })
     .eq('id', planoId);
 
-  if (errUp) { alert('Erro ao atualizar saldo: ' + errUp.message); return; }
+  if (errUp) { alert(t('mens.erro_saldo', 'Erro ao atualizar saldo: ') + errUp.message); return; }
 
   fecharModal('modal-mens-entrega');
 
@@ -354,9 +352,7 @@ async function mensSalvarEntrega() {
 
   // Pergunta se quer imprimir comprovante
   const imprimir = confirm(
-    `✅ Entrega registrada com sucesso!\n` +
-    `Saldo restante: ${novoRestante} itens\n\n` +
-    `Deseja imprimir o comprovante para o cliente assinar?`
+    t('mens.confirm_sucesso', '✅ Entrega registrada com sucesso!\nSaldo restante: {novoRestante} itens\n\nDeseja imprimir o comprovante para o cliente assinar?').replace('{novoRestante}', novoRestante)
   );
   if (imprimir) {
     mensImprimirComprovante(p, qtd, obs, entrega?.id, entrega?.created_at, novoRestante);
@@ -369,18 +365,18 @@ async function mensSalvarEntrega() {
 function mensImprimirComprovante(plano, qtd, obs, entregaId, dataEntrega, saldoApos) {
   const cliente  = plano.clientes || {};
   const dataFmt  = dataEntrega
-    ? new Date(dataEntrega).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' })
-    : new Date().toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+    ? new Date(dataEntrega).toLocaleString('es-PY', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' })
+    : new Date().toLocaleString('es-PY', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
   const dataFim  = plano.data_fim
-    ? new Date(plano.data_fim + 'T12:00:00').toLocaleDateString('pt-BR')
-    : 'Indeterminado';
+    ? new Date(plano.data_fim + 'T12:00:00').toLocaleDateString('es-PY')
+    : t('geral.indeterminado', 'Indeterminado');
   const saldoAnt = (saldoApos !== undefined ? saldoApos : plano.quantidade_restante) + qtd;
 
   const html = `<!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Comprovante Mensalista</title>
+  <title>${t('mens.ticket_titulo', 'Comprovante Plano Mensal')}</title>
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
     body { font-family:Arial,sans-serif; font-size:13px; background:#d0d0d0; padding:16px; }
@@ -413,39 +409,39 @@ function mensImprimirComprovante(plano, qtd, obs, entregaId, dataEntrega, saldoA
 <div class="ticket">
   <div class="center" style="margin-bottom:6px">
     <div class="big">${_mens_nomeRestaurante || 'RESTAURANTE'}</div>
-    <div class="med">COMPROVANTE MENSALISTA</div>
+    <div class="med">${t('mens.ticket_cabecalho', 'COMPROVANTE PLANO MENSAL')}</div>
     <div class="sm">${dataFmt}</div>
-    ${entregaId ? `<div class="sm">Entrega #${entregaId}</div>` : ''}
+    ${entregaId ? `<div class="sm">${t('mens.ticket_entrega', 'Entrega')} #${entregaId}</div>` : ''}
   </div>
   <hr>
-  <div class="row"><span>Cliente:</span><b>${cliente.nome || '—'}</b></div>
+  <div class="row"><span>${t('geral.cliente', 'Cliente')}:</span><b>${cliente.nome || '—'}</b></div>
   <div class="row"><span>Tel:</span><b>${cliente.telefone || '—'}</b></div>
   <hr>
-  <div class="row"><span>Plano / Item:</span><b>${plano.produto_nome}</b></div>
-  <div class="row"><span>Qtd entregue:</span><b>${qtd} ${qtd === 1 ? 'unidade' : 'unidades'}</b></div>
+  <div class="row"><span>${t('mens.ticket_plano', 'Plano / Item')}:</span><b>${plano.produto_nome}</b></div>
+  <div class="row"><span>${t('mens.ticket_entregada', 'Qtd. entregue')}:</span><b>${qtd} ${qtd === 1 ? t('mens.ticket_unidade', 'unidade') : t('mens.ticket_unidades', 'unidades')}</b></div>
   ${obs ? `<div class="row"><span>Obs:</span><span>${obs}</span></div>` : ''}
-  <div class="row"><span>Valor do plano:</span><b>Gs ${Math.round(plano.valor_plano || 0).toLocaleString('es-PY')}</b></div>
-  <div class="row"><span>Vencimento:</span><b>${dataFim}</b></div>
+  <div class="row"><span>${t('mens.ticket_valor', 'Valor do plano')}:</span><b>Gs ${Math.round(plano.valor_plano || 0).toLocaleString('es-PY')}</b></div>
+  <div class="row"><span>${t('geral.vencimento', 'Vencimento')}:</span><b>${dataFim}</b></div>
   <hr>
   <div class="saldo-box">
-    <div class="lab">SALDO RESTANTE APÓS ESTA ENTREGA</div>
+    <div class="lab">${t('mens.ticket_saldo_restante', 'SALDO RESTANTE APÓS ESTA ENTREGA')}</div>
     <div class="num">${saldoApos !== undefined ? saldoApos : plano.quantidade_restante}</div>
-    <div class="lab">de ${plano.quantidade_total} itens contratados</div>
+    <div class="lab">${t('mens.ticket_contratados', 'de {qtd} itens contratados').replace('{qtd}', plano.quantidade_total)}</div>
   </div>
-  <div class="center sm" style="margin-top:4px">Saldo anterior: ${saldoAnt} itens</div>
+  <div class="center sm" style="margin-top:4px">${t('mens.ticket_saldo_anterior', 'Saldo anterior')}: ${saldoAnt} ${t('mens.restantes', 'restantes')}</div>
   <hr>
   <div class="assinatura">
     <div style="font-size:11px;color:#555;margin-bottom:16px">
-      Confirmo que recebi ${qtd === 1 ? 'o item' : 'os itens'} acima conforme meu plano mensalista.
+      ${t('mens.ticket_declaracao', 'Confirmo que recebi o(s) item(ns) acima conforme meu plano mensal.')}
     </div>
     <div class="linha"></div>
-    <div class="leg">Assinatura do cliente — ${cliente.nome || '_________________'}</div>
-    <div class="leg" style="margin-top:8px">Data: ____/____/________</div>
+    <div class="leg">${t('mens.ticket_assinatura', 'Assinatura do cliente')} — ${cliente.nome || '_________________'}</div>
+    <div class="leg" style="margin-top:8px">${t('geral.data', 'Data')}: ____/____/________</div>
   </div>
   <hr>
-  <div class="center sm">*** OBRIGADO ***</div>
+  <div class="center sm">*** ${t('geral.obrigado', 'OBRIGADO')} ***</div>
 </div>
-<button class="btn-print" onclick="window.print()">🖨️ IMPRIMIR COMPROVANTE</button>
+<button class="btn-print" onclick="window.print()">${t('mens.ticket_imprimir', '🖨️ IMPRIMIR COMPROVANTE')}</button>
 <script>setTimeout(()=>window.print(), 600);</script>
 </body>
 </html>`;
@@ -455,7 +451,7 @@ function mensImprimirComprovante(plano, qtd, obs, entregaId, dataEntrega, saldoA
     win.document.write(html);
     win.document.close();
   } else {
-    alert('Popup bloqueado. Permita popups para este site para imprimir.');
+    alert(t('geral.popup_bloqueado', 'Popup bloqueado. Permita popups para este site para imprimir.'));
   }
 }
 
@@ -477,7 +473,7 @@ async function mensVerHistorico(planoId) {
   const linhas = (data || []).map(e => `
     <tr>
       <td style="font-size:0.8rem;color:#888;white-space:nowrap">
-        ${new Date(e.created_at).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' })}
+        ${new Date(e.created_at).toLocaleString('es-PY', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' })}
       </td>
       <td style="text-align:center;font-weight:700;color:#1a7a2e">${e.quantidade}</td>
       <td style="font-size:0.8rem;color:#555">${e.observacoes || '—'}</td>
@@ -488,7 +484,7 @@ async function mensVerHistorico(planoId) {
         </button>
       </td>
     </tr>`
-  ).join('') || '<tr><td colspan="4" style="text-align:center;color:#aaa;padding:12px">Nenhuma entrega registrada ainda</td></tr>';
+  ).join('') || '<tr><td colspan="4" style="text-align:center;color:#aaa;padding:12px">' + t('mens.nenhuma_entrega', 'Nenhuma entrega registrada ainda') + '</td></tr>';
 
   document.getElementById('mens-hist-nome').textContent     = p.clientes?.nome || '—';
   document.getElementById('mens-hist-produto').textContent  = p.produto_nome;
@@ -533,11 +529,11 @@ function mensFiltrar() {
 //  EXCLUIR PLANO
 // ──────────────────────────────────────────────────────────────
 async function mensExcluirPlano(id) {
-  if (!confirm('Excluir este plano? As entregas registradas também serão removidas.')) return;
+  if (!confirm(t('mens.confirm_excluir', 'Excluir este plano? As entregas registradas também serão excluídas.'))) return;
   try {
     await supa.from('mensalista_entregas').delete().eq('plano_id', id);
     const { error } = await supa.from('planos_mensalistas').delete().eq('id', id);
-    if (error) { alert('Erro ao excluir: ' + error.message); return; }
+    if (error) { alert(t('mens.erro_excluir', 'Erro ao excluir: ') + error.message); return; }
     await initMensalistas();
-  } catch(e) { alert('Erro: ' + e.message); }
+  } catch(e) { alert(t('ft.erro', 'Erro: ') + e.message); }
 }
