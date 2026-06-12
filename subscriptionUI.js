@@ -28,17 +28,15 @@ const SubscriptionUI = (() => {
     const { formatarData } = window.SubscriptionDateUtils;
     const dataFmt = formatarData(dataVenc);
 
-    const translate = (key, fallback) => (typeof t !== 'undefined' ? t(key, fallback) : fallback);
-
     switch (status) {
       case 'alerta_verde':
-        return translate('sub.barra_vence', `O pagamento da mensalidade vence no dia <strong>{data}</strong>.`).replace('{data}', dataFmt);
+        return `O pagamento da mensalidade vence no dia <strong>${dataFmt}</strong>.`;
       case 'alerta_amarelo':
-        return translate('sub.barra_amanha', `O vencimento da mensalidade é <strong>amanhã</strong>.`);
+        return `O vencimento da mensalidade é <strong>amanhã</strong>.`;
       case 'alerta_laranja':
-        return translate('sub.barra_hoje', `O vencimento da mensalidade é <strong>hoje</strong>.`);
+        return `O vencimento da mensalidade é <strong>hoje</strong>.`;
       case 'carencia':
-        return translate('sub.barra_carencia', `Atenção: Faltam <strong>{dias}</strong> dia(s) para o bloqueio do sistema por falta de pagamento.`).replace('{dias}', diasParaBloc);
+        return `Atenção: Faltam <strong>${diasParaBloc}</strong> dia${diasParaBloc !== 1 ? 's' : ''} para o bloqueio do sistema por falta de pagamento.`;
       default:
         return '';
     }
@@ -226,11 +224,8 @@ const SubscriptionUI = (() => {
     const anterior = document.getElementById('subscription-block-screen');
     if (anterior) anterior.remove();
 
-    const translate = (key, fallback) => (typeof t !== 'undefined' ? t(key, fallback) : fallback);
-
-    const msgAjuda = translate('sub.mensagem_ajuda', 'Olá, preciso de ajuda com o bloqueio do sistema.');
     const zapLink = contatoFone
-      ? `https://wa.me/${contatoFone.replace(/\D/g,'')}?text=${encodeURIComponent(msgAjuda)}`
+      ? `https://wa.me/${contatoFone.replace(/\D/g,'')}?text=${encodeURIComponent('Olá, preciso de ajuda com o bloqueio do sistema.')}`
       : null;
 
     const screen = document.createElement('div');
@@ -238,16 +233,17 @@ const SubscriptionUI = (() => {
     screen.innerHTML = `
       <div class="block-card">
         <span class="block-icon">🔒</span>
-        <h2>${translate('sub.bloqueado_titulo', 'Sistema Bloqueado')}</h2>
+        <h2>Sistema Bloqueado</h2>
         <p>
-          ${translate('sub.bloqueado_texto', 'O acesso foi suspenso por falta de pagamento da mensalidade.<br>Entre em contato com o administrador para regularizar e reativar o sistema.')}
+          O acesso foi suspenso por falta de pagamento da mensalidade.<br>
+          Entre em contato com o administrador para regularizar e reativar o sistema.
         </p>
         <div class="block-contato">
-          <strong>${translate('sub.contate_suporte', '📞 Contate o suporte:')}</strong>
+          <strong>📞 Contate o suporte:</strong>
           ${contatoNome}
           ${zapLink
             ? `<br><a href="${zapLink}" target="_blank" class="block-tel">
-                <span>💬</span> ${translate('sub.falar_whatsapp', 'Falar no WhatsApp')}
+                <span>💬</span> Falar no WhatsApp
                </a>`
             : ''}
         </div>
@@ -284,19 +280,12 @@ const SubscriptionUI = (() => {
    * @param {string} [opts.contatoFone]   — WhatsApp do suporte
    * @param {string} [opts.contatoNome]   — Nome do suporte
    */
-  async function inicializar({ supabaseUrl, supabaseKey, contatoFone = '', contatoNome = 'Suporte', perfil = null }) {
+  async function inicializar({ supabaseUrl, supabaseKey, contatoFone = '', contatoNome = 'Suporte' }) {
     try {
       const { getServerDate, calcularStatusAssinatura } = window.SubscriptionDateUtils;
 
-      // CORREÇÃO Bugs 1 + 4:
-      // Antes: `const isGestor = window.perfilUsuario === 'adminMaster'`
-      //   → leitura síncrona no momento do init (race condition: perfilUsuario ainda null)
-      //   → closure capturava o valor null para sempre no listener realtime
-      // Depois: getter lazy avaliado a cada chamada.
-      //   O parâmetro `perfil` permite o caller passar o valor já resolvido,
-      //   eliminando a corrida. O fallback para window.perfilUsuario cobre casos
-      //   onde inicializar() é chamado antes da autenticação completar.
-      const getIsGestor = () => (perfil ?? window.perfilUsuario) === 'adminMaster';
+      // ── Só adminMaster nunca é bloqueado ──
+      const isGestor = perfil === 'adminMaster' || window.perfilUsuario === 'adminMaster';
 
       // Paralelo: data do servidor + config da assinatura
       const [hoje, cfg] = await Promise.all([
@@ -312,7 +301,7 @@ const SubscriptionUI = (() => {
       const statusObj = calcularStatusAssinatura(cfg, hoje);
 
       if (statusObj.status === 'bloqueado') {
-        if (getIsGestor()) {
+        if (isGestor) {
           // Gestor vê apenas barra vermelha de aviso, nunca tela de bloqueio
           renderizarBarra({ ...statusObj, status: 'carencia' });
         } else {
@@ -323,13 +312,11 @@ const SubscriptionUI = (() => {
       }
 
       // Realtime: propaga mudanças em tempo real
-      // CORREÇÃO Bug 4: getIsGestor() é chamado dentro do callback (não capturado na closure),
-      // então sempre reflete o perfilUsuario atualizado no momento do evento.
       SubscriptionService.assinarMudancas(async (novoCfg) => {
         const novoHoje = await getServerDate(supabaseUrl, supabaseKey);
         const novoStatus = calcularStatusAssinatura(novoCfg, novoHoje);
         if (novoStatus.status === 'bloqueado') {
-          if (getIsGestor()) {
+          if (isGestor) {
             renderizarBarra({ ...novoStatus, status: 'carencia' });
           } else {
             exibirTelaBloqueio(contatoFone, contatoNome);
